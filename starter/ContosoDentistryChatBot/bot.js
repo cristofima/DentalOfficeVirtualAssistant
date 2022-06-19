@@ -17,58 +17,42 @@ class DentaBot extends ActivityHandler {
         this.QnAMaker = new QnAMaker(configuration.QnAConfiguration, qnaOptions);
 
         // create a DentistScheduler connector
+        this.DentistScheduler = new DentistScheduler(configuration.SchedulerConfiguration);
 
         // create a IntentRecognizer connector
         this.IntentRecognizer = new IntentRecognizer(configuration.LuisConfiguration);
 
         this.onMessage(async (context, next) => {
-            // send user input to IntentRecognizer and collect the response in a variable
+            try {
+                // send user input to QnA Maker and collect the response in a variable
+                const qnaResults = await this.QnAMaker.getAnswers(context);
 
-            // Send user input to LUIS
-            const LuisResult = await this.IntentRecognizer.executeLuisQuery(context);
+                // send user input to IntentRecognizer and collect the response in a variable
+                const luisResult = await this.IntentRecognizer.executeLuisQuery(context);
 
-            // determine which service to respond with based on the results from LUIS //
-            if (LuisResult.luisResult.prediction.topIntent === 'ScheduleAppointment' &&
-                LuisResult.intents.ScheduleAppointment.score > 0.6 &&
-                LuisResult.entities.$instance &&
-                LuisResult.entities.$instance.time &&
-                LuisResult.entities.$instance.time[0]
-            ) {
-                const time = LuisResult.entities.$instance.time[0].text;
-                // Call api with time entity info
-                const getAppointmentTime = `You can book an appointment at ${time}.`;
-                console.log(getAppointmentTime);
-                await context.sendActivity(getAppointmentTime);
-                await next();
-                return;
-            }
+                const topIntent = luisResult.luisResult.prediction.topIntent;
 
-            if (LuisResult.luisResult.prediction.topIntent === 'GetAvailability' &&
-                LuisResult.intents.GetAvailability.score > 0.6 &&
-                LuisResult.entities.$instance &&
-                LuisResult.entities.$instance.date &&
-                LuisResult.entities.$instance.date[0]
-            ) {
-                const date = LuisResult.entities.$instance.date[0].text;
-                // Call api with date entity info
-                const getAvailabilityDate = `The dentist will be available on ${date}.`;
-                console.log(getAvailabilityDate);
-                await context.sendActivity(getAvailabilityDate);
-                await next();
-                return;
-            }
+                let message;
 
-            await next();
+                if (luisResult.intents[topIntent].score > 0.65) {
+                    if (topIntent === 'GetAvailability') {
+                        message = await this.DentistScheduler.getAvailability();
+                    } else if (topIntent === 'ScheduleAppointment') {
+                        message = await this.DentistScheduler.scheduleAppointment(this.IntentRecognizer.getTimeEntity(luisResult));
+                    };
+                } else if (qnaResults[0]) {
+                    // If an answer was received from QnA Maker, send the answer back to the user.
+                    message = qnaResults[0].answer;
+                }
 
-            // send user input to QnA Maker and collect the response in a variable
-            const qnaResults = await this.QnAMaker.getAnswers(context);
-            // If an answer was received from QnA Maker, send the answer back to the user.
-            if (qnaResults[0]) {
-                console.log(qnaResults[0]);
-                await context.sendActivity(`${qnaResults[0].answer}`);
-            } else {
-                // If no answers were returned from QnA Amker, reply with help.
-                await context.sendActivity("I'm not sure what you are talking about. You can ask me questions about your dental session like can I book an appointment tomorrow at 11:45 am?");
+                if (!message) {
+                    // If no answers were returned from the services, reply with help.
+                    message = "I'm not sure what you are talking about. You can ask me questions about your dental session like can I book an appointment tomorrow at 11:45 am?"
+                }
+
+                await context.sendActivity(message);
+            } catch (e) {
+                console.error(e);
             }
 
             await next();
@@ -77,7 +61,7 @@ class DentaBot extends ActivityHandler {
         this.onMembersAdded(async (context, next) => {
             const membersAdded = context.activity.membersAdded;
             // write a custom greeting
-            const welcomeText = '';
+            const welcomeText = 'Welcome to Coronado Dentistry. How may I help you?';
             for (let cnt = 0; cnt < membersAdded.length; ++cnt) {
                 if (membersAdded[cnt].id !== context.activity.recipient.id) {
                     await context.sendActivity(MessageFactory.text(welcomeText, welcomeText));

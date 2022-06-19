@@ -65,18 +65,18 @@ const QnAConfiguration = {
 const LuisConfiguration = {
     applicationId: process.env.LuisAppId,
     endpointKey: process.env.LuisAPIKey,
-    endpoint: process.env.LuisAPIHostName,
-}
+    endpoint: process.env.LuisAPIHostName
+};
 
 const SchedulerConfiguration = {
     SchedulerEndpoint: process.env.SchedulerEndpoint
-}
-//pack each service configuration into 
+};
+// pack each service configuration into
 const configuration = {
     QnAConfiguration,
     LuisConfiguration,
     SchedulerConfiguration
-}
+};
 
 // Create the main dialog.
 const myBot = new DentaBot(configuration, {});
