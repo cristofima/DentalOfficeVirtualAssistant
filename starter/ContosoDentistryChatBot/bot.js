@@ -53,6 +53,7 @@ class DentaBot extends ActivityHandler {
                 await context.sendActivity(message);
             } catch (e) {
                 console.error(e);
+                await context.sendActivity('There are some errors with the Chat Bot. Please try later.');
             }
 
             await next();

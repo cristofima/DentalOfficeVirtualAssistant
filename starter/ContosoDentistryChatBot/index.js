@@ -81,6 +81,14 @@ const configuration = {
 // Create the main dialog.
 const myBot = new DentaBot(configuration, {});
 
+server.get('/status', (req, res) => {
+    res.json({
+        QnAConfiguration: QnAConfiguration.host !== undefined,
+        LuisConfiguration: LuisConfiguration.endpoint !== undefined,
+        SchedulerConfiguration: SchedulerConfiguration.SchedulerEndpoint !== undefined
+    });
+});
+
 // Listen for incoming requests.
 server.post('/api/messages', (req, res) => {
     adapter.processActivity(req, res, async (context) => {
