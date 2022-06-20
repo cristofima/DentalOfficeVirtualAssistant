@@ -43,6 +43,10 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
     needs: build
     environment:
       name: "Production"
@@ -61,4 +65,4 @@ jobs:
           app-name: "Dentistry-Coronado-Scheduler"
           slot-name: "Production"
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_289216F3FEA54BFDB353CE27F6146599 }}
-          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          package: .
