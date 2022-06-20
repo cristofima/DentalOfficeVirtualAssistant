@@ -11,12 +11,15 @@ on:
       - "starter/ContosoDentistryScheduler/**"
   workflow_dispatch:
 
+env:
+  AZURE_WEBAPP_PACKAGE_PATH: "starter/ContosoDentistryScheduler/"
+
 jobs:
   build:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: starter/ContosoDentistryScheduler/
+        working-directory: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
     steps:
       - uses: actions/checkout@v2
@@ -36,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: node-app
-          path: "starter/ContosoDentistryScheduler"
+          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -58,4 +61,4 @@ jobs:
           app-name: "Dentistry-Coronado-Scheduler"
           slot-name: "Production"
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_289216F3FEA54BFDB353CE27F6146599 }}
-          package: "starter/ContosoDentistryScheduler"
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
